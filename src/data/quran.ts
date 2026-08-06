@@ -10,6 +10,7 @@ export type Verse = {
   tafsir?: string;
   dico?: Dico[];
 };
+export type QuizQ = { q: string; opts: string[]; rep: number; exp: string };
 export type Surah = {
   num: number;
   ar: string;
@@ -21,6 +22,7 @@ export type Surah = {
   intro: string;
   valeur: string;
   hadith: string;
+  quiz?: QuizQ[];
   verses: Verse[];
 };
 

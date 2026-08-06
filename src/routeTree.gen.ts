@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LectureRouteImport } from './routes/lecture'
+import { Route as SourateNumRouteImport } from './routes/sourate.$num'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,31 +23,40 @@ const LectureRoute = LectureRouteImport.update({
   path: '/lecture',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SourateNumRoute = SourateNumRouteImport.update({
+  id: '/sourate/$num',
+  path: '/sourate/$num',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/lecture': typeof LectureRoute
+  '/sourate/$num': typeof SourateNumRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/lecture': typeof LectureRoute
+  '/sourate/$num': typeof SourateNumRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/lecture': typeof LectureRoute
+  '/sourate/$num': typeof SourateNumRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/lecture'
+  fullPaths: '/' | '/lecture' | '/sourate/$num'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/lecture'
-  id: '__root__' | '/' | '/lecture'
+  to: '/' | '/lecture' | '/sourate/$num'
+  id: '__root__' | '/' | '/lecture' | '/sourate/$num'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LectureRoute: typeof LectureRoute
+  SourateNumRoute: typeof SourateNumRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +75,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LectureRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sourate/$num': {
+      id: '/sourate/$num'
+      path: '/sourate/$num'
+      fullPath: '/sourate/$num'
+      preLoaderRoute: typeof SourateNumRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LectureRoute: LectureRoute,
+  SourateNumRoute: SourateNumRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
