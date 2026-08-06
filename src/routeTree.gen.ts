@@ -10,33 +10,115 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as LectureRouteImport } from './routes/lecture'
+import { Route as ProfilRouteImport } from './routes/profil'
+import { Route as ProgresRouteImport } from './routes/progres'
+import { Route as QuizRouteImport } from './routes/quiz'
+import { Route as SourateNumRouteImport } from './routes/sourate.$num'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LectureRoute = LectureRouteImport.update({
+  id: '/lecture',
+  path: '/lecture',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfilRoute = ProfilRouteImport.update({
+  id: '/profil',
+  path: '/profil',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProgresRoute = ProgresRouteImport.update({
+  id: '/progres',
+  path: '/progres',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuizRoute = QuizRouteImport.update({
+  id: '/quiz',
+  path: '/quiz',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SourateNumRoute = SourateNumRouteImport.update({
+  id: '/sourate/$num',
+  path: '/sourate/$num',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/lecture': typeof LectureRoute
+  '/profil': typeof ProfilRoute
+  '/progres': typeof ProgresRoute
+  '/quiz': typeof QuizRoute
+  '/sourate/$num': typeof SourateNumRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/lecture': typeof LectureRoute
+  '/profil': typeof ProfilRoute
+  '/progres': typeof ProgresRoute
+  '/quiz': typeof QuizRoute
+  '/sourate/$num': typeof SourateNumRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/lecture': typeof LectureRoute
+  '/profil': typeof ProfilRoute
+  '/progres': typeof ProgresRoute
+  '/quiz': typeof QuizRoute
+  '/sourate/$num': typeof SourateNumRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/lecture'
+    | '/profil'
+    | '/progres'
+    | '/quiz'
+    | '/sourate/$num'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/auth'
+    | '/lecture'
+    | '/profil'
+    | '/progres'
+    | '/quiz'
+    | '/sourate/$num'
+  id:
+    | '__root__'
+    | '/'
+    | '/auth'
+    | '/lecture'
+    | '/profil'
+    | '/progres'
+    | '/quiz'
+    | '/sourate/$num'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthRoute: typeof AuthRoute
+  LectureRoute: typeof LectureRoute
+  ProfilRoute: typeof ProfilRoute
+  ProgresRoute: typeof ProgresRoute
+  QuizRoute: typeof QuizRoute
+  SourateNumRoute: typeof SourateNumRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,22 +130,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lecture': {
+      id: '/lecture'
+      path: '/lecture'
+      fullPath: '/lecture'
+      preLoaderRoute: typeof LectureRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profil': {
+      id: '/profil'
+      path: '/profil'
+      fullPath: '/profil'
+      preLoaderRoute: typeof ProfilRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/progres': {
+      id: '/progres'
+      path: '/progres'
+      fullPath: '/progres'
+      preLoaderRoute: typeof ProgresRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quiz': {
+      id: '/quiz'
+      path: '/quiz'
+      fullPath: '/quiz'
+      preLoaderRoute: typeof QuizRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sourate/$num': {
+      id: '/sourate/$num'
+      path: '/sourate/$num'
+      fullPath: '/sourate/$num'
+      preLoaderRoute: typeof SourateNumRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthRoute: AuthRoute,
+  LectureRoute: LectureRoute,
+  ProfilRoute: ProfilRoute,
+  ProgresRoute: ProgresRoute,
+  QuizRoute: QuizRoute,
+  SourateNumRoute: SourateNumRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

@@ -1,0 +1,19 @@
+{
+  "name": "Hifz — Juz 'Amma en Warsh",
+  "short_name": "Hifz",
+  "description": "Mémoriser le Juz 'Amma en Warsh 'an Nâfi' : audio, tajwîd coloré, quiz et séries.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fdf6e8",
+  "theme_color": "#1a6b3c",
+  "lang": "fr",
+  "categories": ["education", "lifestyle"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
