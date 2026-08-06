@@ -14,7 +14,111 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      badges: {
+        Row: {
+          code: string
+          earned_at: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          earned_at?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          earned_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      daily_activity: {
+        Row: {
+          day: string
+          user_id: string
+          verses: number
+          xp: number
+        }
+        Insert: {
+          day: string
+          user_id: string
+          verses?: number
+          xp?: number
+        }
+        Update: {
+          day?: string
+          user_id?: string
+          verses?: number
+          xp?: number
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          daily_goal: number
+          display_name: string | null
+          id: string
+          last_active_day: string | null
+          reciter: string
+          streak: number
+          updated_at: string
+          xp: number
+        }
+        Insert: {
+          created_at?: string
+          daily_goal?: number
+          display_name?: string | null
+          id: string
+          last_active_day?: string | null
+          reciter?: string
+          streak?: number
+          updated_at?: string
+          xp?: number
+        }
+        Update: {
+          created_at?: string
+          daily_goal?: number
+          display_name?: string | null
+          id?: string
+          last_active_day?: string | null
+          reciter?: string
+          streak?: number
+          updated_at?: string
+          xp?: number
+        }
+        Relationships: []
+      }
+      surah_progress: {
+        Row: {
+          best_quiz: number
+          listens: number
+          memorized: boolean
+          stars: number
+          surah: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          best_quiz?: number
+          listens?: number
+          memorized?: boolean
+          stars?: number
+          surah: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          best_quiz?: number
+          listens?: number
+          memorized?: boolean
+          stars?: number
+          surah?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
