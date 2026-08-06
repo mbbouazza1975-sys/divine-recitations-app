@@ -21,7 +21,7 @@ export const Route = createFileRoute("/quiz")({
       },
     ],
   }),
-  component: QuizPage;
+  component: QuizPage,
 });
 
 type Q = { kind: "audio" | "verset" | "sens"; prompt: string; arabic?: string; surah: number; opts: string[]; rep: number; exp: string };
@@ -141,7 +141,9 @@ function QuizPage() {
     }
     const pct = Math.round((score / qs.length) * 100);
     const s = qs[0]!.surah;
-    if (pct > stat(s).bestQuiz) setSurah(s, { bestQuiz: pct, stars: pct === 100 ? 3 : undefined as never });
+    const cur = stat(s);
+    if (pct > cur.bestQuiz)
+      setSurah(s, { bestQuiz: pct, stars: pct === 100 ? Math.max(cur.stars, 3) : cur.stars });
     setI(qs.length);
   };
 
