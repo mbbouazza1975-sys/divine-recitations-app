@@ -1,3 +1,4 @@
+import type React from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Flame, Star, Target } from "lucide-react";
 import { Shell } from "@/components/Shell";
@@ -51,7 +52,7 @@ function Progres() {
             [<Target key="t" size={16} className="text-accent-foreground mx-auto" />, state.dailyGoal, "versets/jour"],
           ].map(([icon, val, label], k) => (
             <div key={k} className="bg-secondary rounded-xl py-2.5">
-              {icon as JSX.Element}
+              {icon as React.ReactNode}
               <p className="mt-1 text-base font-black">{val as number}</p>
               <p className="text-muted-foreground text-[10px] font-bold">{label as string}</p>
             </div>
