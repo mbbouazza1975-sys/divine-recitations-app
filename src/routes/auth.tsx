@@ -3,7 +3,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { Shell } from "@/components/Shell";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -53,18 +52,6 @@ function Auth() {
     }
   };
 
-  const google = async () => {
-    const res = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (res.error) {
-      toast.error("Connexion Google impossible");
-      return;
-    }
-    if (res.redirected) return;
-    void nav({ to: "/" });
-  };
-
   return (
     <Shell title="Mon compte" subtitle="Synchronise ta progression" back="/profil" nav={false}>
       <div className="surface enter p-5">
@@ -108,17 +95,7 @@ function Auth() {
           </button>
         </form>
 
-        <div className="text-muted-foreground my-4 flex items-center gap-3 text-[11px] font-bold">
-          <span className="bg-border h-px flex-1" /> ou <span className="bg-border h-px flex-1" />
-        </div>
 
-        <button
-          onClick={google}
-          className="bg-card flex w-full items-center justify-center gap-2 rounded-xl border py-3 text-sm font-black"
-        >
-          <img src="https://www.google.com/favicon.ico" alt="" width={16} height={16} loading="lazy" />
-          Continuer avec Google
-        </button>
       </div>
 
       <p className="text-muted-foreground mt-4 text-center text-[11px] font-semibold">
