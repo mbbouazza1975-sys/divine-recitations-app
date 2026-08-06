@@ -61,7 +61,7 @@ function Progres() {
 
       <section className="surface mt-4 p-4">
         <h2 className="text-xs font-black tracking-wider uppercase">28 derniers jours</h2>
-        <div className="mt-3 grid grid-cols-14 gap-1">
+        <div className="mt-3 grid gap-1" style={{ gridTemplateColumns: "repeat(14, minmax(0, 1fr))" }}>
           {days.map((d) => {
             const xp = state.days[d]?.xp ?? 0;
             const o = xp === 0 ? 0.09 : 0.25 + (xp / max) * 0.75;
