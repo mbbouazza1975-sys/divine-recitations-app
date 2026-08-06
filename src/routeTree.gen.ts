@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LectureRouteImport } from './routes/lecture'
+import { Route as QuizRouteImport } from './routes/quiz'
 import { Route as SourateNumRouteImport } from './routes/sourate.$num'
 
 const IndexRoute = IndexRouteImport.update({
@@ -23,6 +24,11 @@ const LectureRoute = LectureRouteImport.update({
   path: '/lecture',
   getParentRoute: () => rootRouteImport,
 } as any)
+const QuizRoute = QuizRouteImport.update({
+  id: '/quiz',
+  path: '/quiz',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SourateNumRoute = SourateNumRouteImport.update({
   id: '/sourate/$num',
   path: '/sourate/$num',
@@ -32,30 +38,34 @@ const SourateNumRoute = SourateNumRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/lecture': typeof LectureRoute
+  '/quiz': typeof QuizRoute
   '/sourate/$num': typeof SourateNumRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/lecture': typeof LectureRoute
+  '/quiz': typeof QuizRoute
   '/sourate/$num': typeof SourateNumRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/lecture': typeof LectureRoute
+  '/quiz': typeof QuizRoute
   '/sourate/$num': typeof SourateNumRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/lecture' | '/sourate/$num'
+  fullPaths: '/' | '/lecture' | '/quiz' | '/sourate/$num'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/lecture' | '/sourate/$num'
-  id: '__root__' | '/' | '/lecture' | '/sourate/$num'
+  to: '/' | '/lecture' | '/quiz' | '/sourate/$num'
+  id: '__root__' | '/' | '/lecture' | '/quiz' | '/sourate/$num'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LectureRoute: typeof LectureRoute
+  QuizRoute: typeof QuizRoute
   SourateNumRoute: typeof SourateNumRoute
 }
 
@@ -75,6 +85,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LectureRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/quiz': {
+      id: '/quiz'
+      path: '/quiz'
+      fullPath: '/quiz'
+      preLoaderRoute: typeof QuizRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sourate/$num': {
       id: '/sourate/$num'
       path: '/sourate/$num'
@@ -88,6 +105,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LectureRoute: LectureRoute,
+  QuizRoute: QuizRoute,
   SourateNumRoute: SourateNumRoute,
 }
 export const routeTree = rootRouteImport
