@@ -73,6 +73,54 @@ export const RECITERS: Reciter[] = [
   },
 ];
 
+RECITERS.push(
+  {
+    id: "husari",
+    name: "Mahmûd Khalîl Al-Husarî",
+    detail: "Warsh · le maître de la tajwîd, très lent",
+    server: "https://server13.mp3quran.net/husr/Rewayat-Warsh-A-n-Nafi/",
+    emoji: "🏆",
+  },
+  {
+    id: "koshi",
+    name: "Al-'Uyûn Al-Kûshî",
+    detail: "Warsh · récitation douce et fluide",
+    server: "https://server11.mp3quran.net/koshi/",
+    emoji: "💫",
+  },
+  {
+    id: "benkirane",
+    name: "'Abdelmoujîb Benkirane",
+    detail: "Warsh · école marocaine authentique",
+    server: "https://server16.mp3quran.net/A-Benkirane/Rewayat-Warsh-A-n-Nafi/",
+    emoji: "🌿",
+  },
+  {
+    id: "belalya",
+    name: "Rachîd Belâlya",
+    detail: "Warsh · voix chaleureuse, rythme régulier",
+    server: "https://server6.mp3quran.net/bl3/Rewayat-Warsh-A-n-Nafi/",
+    emoji: "🎧",
+  },
+  {
+    id: "deban",
+    name: "Ahmad Debân",
+    detail: "Warsh (Tarîq Al-Azraq) · lecture claire",
+    server: "https://server16.mp3quran.net/deban/Rewayat-Warsh-A-n-Nafi-Men-Tariq-Alazraq/",
+    emoji: "✨",
+  },
+  {
+    id: "lharraz",
+    name: "Hichâm Lharrâz",
+    detail: "Warsh · voix jeune et dynamique",
+    server: "https://server16.mp3quran.net/H-Lharraz/Rewayat-Warsh-A-n-Nafi/",
+    emoji: "🔥",
+  },
+);
+
+/** Vitesses de lecture disponibles. */
+export const SPEEDS = [0.5, 0.75, 0.9, 1, 1.25, 1.5] as const;
+
 export const getReciter = (id: string) => RECITERS.find((r) => r.id === id) ?? RECITERS[0]!;
 
 export const audioUrl = (reciterId: string, surah: number) =>
