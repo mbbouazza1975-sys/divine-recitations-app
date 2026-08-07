@@ -242,7 +242,11 @@ function SurahPage() {
           </p>
         </button>
         <button
-          onClick={() => setRate(SPEEDS[(SPEEDS.indexOf(rate as never) + 1) % SPEEDS.length]!)}
+          onClick={() =>
+            setRate(
+              SPEEDS[((SPEEDS as readonly number[]).indexOf(rate) + 1) % SPEEDS.length]!,
+            )
+          }
           className="bg-secondary shrink-0 rounded-full px-2.5 py-1.5 text-[11px] font-black"
           aria-label="Vitesse de lecture"
         >
