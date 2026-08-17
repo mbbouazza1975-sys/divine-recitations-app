@@ -39,7 +39,7 @@ export const Route = createFileRoute("/sourate/$num")({
       ],
     };
   },
-  loader: ({ params }) => {
+  loader: ({ params }): { num: number } => {
     const s = getSurah(Number(params.num));
     if (!s) throw notFound();
     return { num: s.num };
