@@ -39,7 +39,7 @@ export const Route = createFileRoute("/sourate/$num")({
       ],
     };
   },
-  loader: ({ params }) => {
+  loader: ({ params }): { num: number } => {
     const s = getSurah(Number(params.num));
     if (!s) throw notFound();
     return { num: s.num };
@@ -50,7 +50,8 @@ export const Route = createFileRoute("/sourate/$num")({
 type Mode = "lecture" | "masque" | "sens";
 
 function SurahPage() {
-  const { num } = Route.useLoaderData();
+  const params = Route.useParams();
+  const num = Number(params.num);
   const surah = getSurah(num)!;
   const moderne = getModerne(num);
   const { state, stat, setSurah, setReciter, addXp } = useProgress();
