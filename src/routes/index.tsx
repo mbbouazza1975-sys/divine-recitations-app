@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Flame, Play, Sparkles, Brain, Headphones, ChevronRight } from "lucide-react";
 import { BottomNav } from "@/components/BottomNav";
@@ -32,8 +33,13 @@ function Home() {
   const next = SURAHS.find((s) => !stat(s.num).memorized) ?? SURAHS[0]!;
   const recent = SURAHS.filter((s) => stat(s.num).listens > 0).slice(0, 4);
 
-  const hour = new Date().getHours();
-  const greet = hour < 12 ? "Sabâh al-khayr" : hour < 18 ? "Bonne après-midi" : "Masâ' al-khayr";
+  const [greet, setGreet] = useState("As-salâmu ʿalaykum");
+  useEffect(() => {
+    const hour = new Date().getHours();
+    setGreet(
+      hour < 12 ? "Sabâh al-khayr" : hour < 18 ? "Bonne après-midi" : "Masâ' al-khayr",
+    );
+  }, []);
 
   return (
     <div className="bg-background mx-auto flex min-h-screen max-w-[520px] flex-col">
