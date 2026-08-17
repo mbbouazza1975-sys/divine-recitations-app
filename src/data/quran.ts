@@ -125,3 +125,45 @@ export const getReciter = (id: string) => RECITERS.find((r) => r.id === id) ?? R
 
 export const audioUrl = (reciterId: string, surah: number) =>
   `${getReciter(reciterId).server}${String(surah).padStart(3, "0")}.mp3`;
+
+/** Récitateurs verset par verset (everyayah.com) — pour la mémorisation. */
+export type AyahReciter = { id: string; name: string; detail: string; base: string; emoji: string };
+
+export const AYAH_RECITERS: AyahReciter[] = [
+  {
+    id: "jazaery",
+    name: "Yâsîn Al-Jazâ'irî",
+    detail: "Warsh · clair, idéal mémorisation",
+    base: "https://everyayah.com/data/warsh/warsh_yassin_al_jazaery_64kbps/",
+    emoji: "🌙",
+  },
+  {
+    id: "dosary",
+    name: "Ibrâhîm Ad-Dôsarî",
+    detail: "Warsh · lecture posée",
+    base: "https://everyayah.com/data/warsh/warsh_ibrahim_aldosary_128kbps/",
+    emoji: "📖",
+  },
+  {
+    id: "husary",
+    name: "Mahmûd Al-Husarî",
+    detail: "Tajwîd très lent, école du hifz",
+    base: "https://everyayah.com/data/Husary_128kbps/",
+    emoji: "🏆",
+  },
+  {
+    id: "belalia",
+    name: "Rachîd Belâlya",
+    detail: "Voix chaleureuse, rythme régulier",
+    base: "https://everyayah.com/data/Husary_128kbps/",
+    emoji: "🎧",
+  },
+];
+
+export const getAyahReciter = (id: string) =>
+  AYAH_RECITERS.find((r) => r.id === id) ?? AYAH_RECITERS[0]!;
+
+export const ayahUrl = (reciterId: string, surah: number, ayah: number) =>
+  `${getAyahReciter(reciterId).base}${String(surah).padStart(3, "0")}${String(ayah).padStart(3, "0")}.mp3`;
+
+export const REPEATS = [1, 2, 3, 5, 7] as const;

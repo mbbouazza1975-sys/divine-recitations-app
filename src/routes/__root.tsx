@@ -82,7 +82,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "Application ludique pour mémoriser le Juz 'Amma : audio Warsh, tajwîd coloré, quiz, séries et mode hors ligne.",
       },
-      { name: "theme-color", content: "#1a6b3c" },
+      { name: "theme-color", content: "#2D5A27" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-title", content: "Hifz" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
@@ -103,7 +103,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Amiri:wght@400;700&family=Nunito:wght@400;600;700;800;900&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Amiri:wght@400;700&family=Inter:wght@400;500;600;700;800;900&display=swap",
       },
     ],
   }),
