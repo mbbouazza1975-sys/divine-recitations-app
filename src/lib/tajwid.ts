@@ -77,6 +77,7 @@ function colorWord(word: string): string {
 /** Texte arabe brut -> HTML avec un <span class="w-word qw"> par mot et couleurs tajwîd Warsh. */
 export function tajwidHtml(text: string): string {
   return text
+    .replace(/<[^>]*>/g, "")
     .trim()
     .split(/\s+/)
     .map((w) => `<span class="w-word qw">${colorWord(w)}</span>`)
