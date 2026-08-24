@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import {
   BookOpen,
@@ -7,9 +7,9 @@ import {
   Download,
   Eye,
   EyeOff,
+  Heart,
   Loader2,
   MoveVertical,
-  Palette,
   Pause,
   Play,
   Sparkles,
@@ -17,11 +17,20 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Shell } from "@/components/Shell";
-import { getSurah, getReciter, RECITERS, SPEEDS, type Verse } from "@/data/quran";
+import {
+  AYAH_RECITERS,
+  REPEATS,
+  SPEEDS,
+  ayahUrl,
+  getAyahReciter,
+  getSurah,
+  type Verse,
+} from "@/data/quran";
 import { getModerne } from "@/data/moderne";
+import { getContexte } from "@/data/contexte";
 import { useProgress } from "@/lib/progress";
-import { wrapWords } from "@/lib/tajwid";
-import { downloadSurah, isOffline, removeSurah, resolveAudio } from "@/lib/offline";
+import { tajwidHtml } from "@/lib/tajwid";
+import { downloadSurah, isOffline, removeSurah } from "@/lib/offline";
 
 export const Route = createFileRoute("/sourate/$num")({
   head: ({ params }) => {
@@ -47,69 +56,135 @@ export const Route = createFileRoute("/sourate/$num")({
   component: SurahPage,
 });
 
-type Mode = "lecture" | "masque" | "sens";
+type Mode = "lecture" | "memo" | "test";
+
+/** Scroll de la fenêtre vers le verset, sans scrollIntoView. */
+function scrollToVerse(n: number) {
+  const card = document.getElementById(`vc${n}`);
+  if (!card) return;
+  const r = card.getBoundingClientRect();
+  if (r.top >= 90 && r.bottom <= window.innerHeight - 190) return;
+  window.scrollTo({ top: window.scrollY + r.top - 100, behavior: "smooth" });
+}
 
 function SurahPage() {
   const params = Route.useParams();
   const num = Number(params.num);
   const surah = getSurah(num)!;
   const moderne = getModerne(num);
+  const ctx = getContexte(num);
   const { state, stat, setSurah, setReciter, addXp } = useProgress();
   const st = stat(num);
 
   const [mode, setMode] = useState<Mode>("lecture");
   const [tajwid, setTajwid] = useState(true);
-  const [simple, setSimple] = useState(true);
   const [autoScroll, setAutoScroll] = useState(true);
   const [pickReciter, setPickReciter] = useState(false);
-  const [active, setActive] = useState<number | null>(null);
+  const [current, setCurrent] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false);
   const [rate, setRate] = useState(1);
+  const [reps, setReps] = useState<number>(1);
+  const [pct, setPct] = useState(0);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [open, setOpen] = useState<number | null>(null);
+  const [known, setKnown] = useState<number[]>([]);
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const verseRefs = useRef<Record<number, HTMLElement | null>>({});
+  const hlRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const repLeft = useRef(1);
   const counted = useRef(false);
 
-  const reciter = getReciter(state.reciter);
-
-  // Scroll automatique : on répartit la durée de l'audio sur les versets.
-  useEffect(() => {
-    const a = audioRef.current;
-    if (!a) return;
-    const onTime = () => {
-      if (!a.duration || !isFinite(a.duration)) return;
-      const i = Math.min(
-        surah.verses.length - 1,
-        Math.floor((a.currentTime / a.duration) * surah.verses.length),
-      );
-      const n = surah.verses[i]?.n ?? null;
-      setActive((prev) => (prev === n ? prev : n));
-    };
-    a.addEventListener("timeupdate", onTime);
-    return () => a.removeEventListener("timeupdate", onTime);
-  }, [surah.verses]);
-
-  useEffect(() => {
-    if (!autoScroll || !playing || active == null) return;
-    verseRefs.current[active]?.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, [active, autoScroll, playing]);
+  const reciterId = AYAH_RECITERS.some((r) => r.id === state.reciter)
+    ? state.reciter
+    : AYAH_RECITERS[0]!.id;
+  const reciter = getAyahReciter(reciterId);
 
   useEffect(() => setSaved(isOffline(state.reciter, num)), [state.reciter, num]);
 
   useEffect(() => {
     const a = audioRef.current;
     return () => {
+      if (hlRef.current) clearInterval(hlRef.current);
       a?.pause();
     };
   }, []);
 
-  useEffect(() => {
-    if (audioRef.current) audioRef.current.playbackRate = rate;
-  }, [rate]);
+  /** Surlignement mot par mot : démarré 250 ms après le rendu du verset. */
+  const startHighlight = useCallback((n: number) => {
+    if (hlRef.current) clearInterval(hlRef.current);
+    setTimeout(() => {
+      const card = document.getElementById(`vc${n}`);
+      if (!card) return;
+      const words = Array.from(card.querySelectorAll<HTMLElement>(".w-word"));
+      if (!words.length) return;
+      let last = -1;
+      hlRef.current = setInterval(() => {
+        const a = audioRef.current;
+        if (!a || a.paused || a.ended) {
+          if (hlRef.current) clearInterval(hlRef.current);
+          words.forEach((w) => w.classList.remove("hl"));
+          return;
+        }
+        const wi = Math.min(
+          Math.floor((a.currentTime / (a.duration || 1)) * words.length),
+          words.length - 1,
+        );
+        if (wi !== last) {
+          words.forEach((w) => w.classList.remove("hl"));
+          words[wi]?.classList.add("hl");
+          last = wi;
+        }
+      }, 80);
+    }, 250);
+  }, []);
 
-  const toggle = async () => {
+  const playVerse = useCallback(
+    async (n: number, keepReps = false) => {
+      const a = audioRef.current;
+      if (!a) return;
+      if (!keepReps) repLeft.current = reps;
+      setBusy(true);
+      try {
+        a.src = ayahUrl(reciterId, num, n);
+        a.playbackRate = rate;
+        setCurrent(n);
+        await a.play();
+        setPlaying(true);
+        startHighlight(n);
+        if (autoScroll) setTimeout(() => scrollToVerse(n), 200);
+        if (!counted.current) {
+          counted.current = true;
+          setSurah(num, { listens: st.listens + 1 });
+          addXp(5, 0);
+        }
+      } catch {
+        setPlaying(false);
+        toast.error("Lecture impossible. Vérifie ta connexion.");
+      } finally {
+        setBusy(false);
+      }
+    },
+    [reciterId, num, rate, reps, autoScroll, startHighlight, setSurah, st.listens, addXp],
+  );
+
+  const onEnded = () => {
+    repLeft.current -= 1;
+    if (repLeft.current > 0 && current != null) {
+      void playVerse(current, true);
+      return;
+    }
+    const idx = surah.verses.findIndex((v) => v.n === current);
+    const next = surah.verses[idx + 1];
+    if (next) {
+      void playVerse(next.n);
+    } else {
+      setPlaying(false);
+      setCurrent(null);
+      setPct(0);
+    }
+  };
+
+  const togglePlay = () => {
     const a = audioRef.current;
     if (!a) return;
     if (playing) {
@@ -117,33 +192,19 @@ function SurahPage() {
       setPlaying(false);
       return;
     }
-    setBusy(true);
-    try {
-      if (!a.src) a.src = await resolveAudio(state.reciter, num);
-      a.playbackRate = rate;
-      await a.play();
-      setPlaying(true);
-      if (!counted.current) {
-        counted.current = true;
-        setSurah(num, { listens: st.listens + 1 });
-        addXp(5, 0);
-      }
-    } catch {
-      toast.error("Lecture impossible. Vérifie ta connexion.");
-    } finally {
-      setBusy(false);
+    if (current != null && a.src) {
+      void a.play().then(() => {
+        setPlaying(true);
+        startHighlight(current);
+      });
+      return;
     }
+    void playVerse(surah.verses[0]!.n);
   };
 
-  // Changement de récitateur -> recharger la source
   useEffect(() => {
-    const a = audioRef.current;
-    if (!a) return;
-    a.pause();
-    a.removeAttribute("src");
-    setPlaying(false);
-    setActive(null);
-  }, [state.reciter]);
+    if (audioRef.current) audioRef.current.playbackRate = rate;
+  }, [rate]);
 
   const download = async () => {
     setBusy(true);
@@ -162,6 +223,15 @@ function SurahPage() {
     } finally {
       setBusy(false);
     }
+  };
+
+  const toggleKnown = (n: number) => {
+    setKnown((k) => {
+      const has = k.includes(n);
+      const next = has ? k.filter((x) => x !== n) : [...k, n];
+      if (!has) addXp(3, 1);
+      return next;
+    });
   };
 
   const finish = () => {
@@ -188,9 +258,10 @@ function SurahPage() {
       <audio
         ref={audioRef}
         preload="none"
-        onEnded={() => {
-          setPlaying(false);
-          setActive(null);
+        onEnded={onEnded}
+        onTimeUpdate={(e) => {
+          const a = e.currentTarget;
+          setPct(a.duration ? (a.currentTime / a.duration) * 100 : 0);
         }}
       />
 
@@ -201,6 +272,22 @@ function SurahPage() {
         </p>
       </section>
 
+      {ctx && (
+        <section className="surface enter mt-3 p-4">
+          <h2 className="mb-2 text-xs font-black">🏺 Contexte historique</h2>
+          <p className="bg-secondary mb-2 inline-block rounded-full px-2.5 py-1 text-[11px] font-black">
+            {ctx.periode}
+          </p>
+          <p className="text-sm leading-relaxed font-semibold">{ctx.circonstances}</p>
+          <p className="text-muted-foreground mt-2 text-xs leading-relaxed font-semibold">
+            {ctx.lien}
+          </p>
+          <p className="bg-primary-soft mt-3 rounded-xl px-3 py-2 text-xs leading-relaxed font-semibold">
+            🎓 {ctx.nak}
+          </p>
+        </section>
+      )}
+
       {moderne && (
         <section className="surface enter mt-3 p-4">
           <h2 className="mb-2 flex items-center gap-1.5 text-xs font-black">
@@ -210,116 +297,35 @@ function SurahPage() {
           <h3 className="text-muted-foreground mt-3 mb-1 text-[11px] font-black tracking-wider uppercase">
             Et aujourd&apos;hui ?
           </h3>
-          <p className="bg-primary-soft rounded-xl px-3 py-2 text-xs leading-relaxed font-semibold">
+          <p className="bg-accent-soft rounded-xl px-3 py-2 text-xs leading-relaxed font-semibold">
             {moderne.aujourdhui}
           </p>
         </section>
       )}
 
-      <div className="surface sticky top-[68px] z-30 mt-4 flex items-center gap-2 p-2.5">
-        <button
-          onClick={toggle}
-          className="bg-primary text-primary-foreground flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
-          aria-label={playing ? "Pause" : "Écouter"}
-        >
-          {busy ? (
-            <Loader2 size={19} className="animate-spin" />
-          ) : playing ? (
-            <Pause size={19} fill="currentColor" />
-          ) : (
-            <Play size={19} fill="currentColor" />
-          )}
-        </button>
-        <button
-          onClick={() => setPickReciter((v) => !v)}
-          className="min-w-0 flex-1 text-left"
-        >
-          <p className="flex items-center gap-1 truncate text-[11px] font-black">
-            {reciter.emoji} {reciter.name}
-            <ChevronDown size={12} className={pickReciter ? "rotate-180" : ""} />
-          </p>
-          <p className="text-muted-foreground truncate text-[10px] font-semibold">
-            {reciter.detail}
-          </p>
-        </button>
-        <button
-          onClick={() =>
-            setRate(
-              SPEEDS[((SPEEDS as readonly number[]).indexOf(rate) + 1) % SPEEDS.length]!,
-            )
-          }
-          className="bg-secondary shrink-0 rounded-full px-2.5 py-1.5 text-[11px] font-black"
-          aria-label="Vitesse de lecture"
-        >
-          ×{rate}
-        </button>
-        <button
-          onClick={() => setAutoScroll((v) => !v)}
-          className={`shrink-0 rounded-full p-2 ${autoScroll ? "bg-primary-soft text-primary" : "bg-secondary"}`}
-          aria-label="Défilement automatique"
-          title="Défilement automatique"
-        >
-          <MoveVertical size={16} />
-        </button>
-        <button
-          onClick={download}
-          className={`shrink-0 rounded-full p-2 ${saved ? "bg-primary-soft text-primary" : "bg-secondary"}`}
-          aria-label="Hors ligne"
-        >
-          {saved ? <Trash2 size={16} /> : <Download size={16} />}
-        </button>
+      {/* Légende tajwîd */}
+      <div className="surface mt-3 flex flex-wrap gap-2 p-3">
+        {(
+          [
+            ["w-madd", "Madd · son long"],
+            ["w-ghunna", "Ghunna · nasal"],
+            ["w-qalqala", "Qalqala · rebond"],
+            ["w-tafkhim", "Tafkhîm · emphatique"],
+          ] as const
+        ).map(([c, label]) => (
+          <span key={c} className={`bg-secondary rounded-full px-2.5 py-1 text-[10px] font-black`}>
+            <span className={c}>●</span> {label}
+          </span>
+        ))}
       </div>
 
-      {pickReciter && (
-        <div className="surface mt-2 space-y-2 p-3">
-          <p className="text-muted-foreground text-[10px] font-black tracking-wider uppercase">
-            Récitateurs Warsh &apos;an Nâfi&apos;
-          </p>
-          <div className="grid gap-1.5">
-            {RECITERS.map((r) => (
-              <button
-                key={r.id}
-                onClick={() => {
-                  setReciter(r.id);
-                  setPickReciter(false);
-                }}
-                className={`flex items-center gap-2 rounded-xl px-3 py-2 text-left ${
-                  state.reciter === r.id ? "bg-primary-soft text-primary" : "bg-secondary"
-                }`}
-              >
-                <span>{r.emoji}</span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-xs font-extrabold">{r.name}</span>
-                  <span className="text-muted-foreground block truncate text-[10px] font-semibold">
-                    {r.detail}
-                  </span>
-                </span>
-                {state.reciter === r.id && <span className="text-xs font-black">✓</span>}
-              </button>
-            ))}
-          </div>
-          <div className="flex flex-wrap gap-1.5 border-t pt-2">
-            {SPEEDS.map((s) => (
-              <button
-                key={s}
-                onClick={() => setRate(s)}
-                className={`rounded-full px-3 py-1.5 text-[11px] font-black ${
-                  rate === s ? "bg-primary text-primary-foreground" : "bg-secondary"
-                }`}
-              >
-                ×{s}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
+      {/* Modes */}
       <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto pb-1">
         {(
           [
             ["lecture", "Lecture", BookOpen],
-            ["masque", "Masqué", EyeOff],
-            ["sens", "Sens & tafsir", Eye],
+            ["memo", "Mémo", Eye],
+            ["test", "Test", EyeOff],
           ] as const
         ).map(([id, label, Icon]) => (
           <button
@@ -334,19 +340,26 @@ function SurahPage() {
         ))}
         <button
           onClick={() => setTajwid((v) => !v)}
-          className={`flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold ${
+          className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold ${
             tajwid ? "bg-accent-soft text-accent-foreground" : "bg-secondary"
           }`}
         >
-          <Palette size={13} /> Tajwîd
+          Tajwîd
         </button>
         <button
-          onClick={() => setSimple((v) => !v)}
+          onClick={() => setAutoScroll((v) => !v)}
           className={`flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold ${
-            simple ? "bg-accent-soft text-accent-foreground" : "bg-secondary"
+            autoScroll ? "bg-primary-soft text-primary" : "bg-secondary"
           }`}
         >
-          <Sparkles size={13} /> Version simple
+          <MoveVertical size={13} /> Auto-scroll
+        </button>
+        <button
+          onClick={download}
+          className={`shrink-0 rounded-full p-2 ${saved ? "bg-primary-soft text-primary" : "bg-secondary"}`}
+          aria-label="Hors ligne"
+        >
+          {saved ? <Trash2 size={14} /> : <Download size={14} />}
         </button>
       </div>
 
@@ -356,13 +369,10 @@ function SurahPage() {
             key={v.n}
             v={v}
             mode={mode}
-            simple={simple}
-            active={active === v.n && playing}
-            innerRef={(el) => {
-              verseRefs.current[v.n] = el;
-            }}
-            open={open === v.n}
-            onToggle={() => setOpen(open === v.n ? null : v.n)}
+            active={current === v.n}
+            known={known.includes(v.n)}
+            onPlay={() => void playVerse(v.n)}
+            onKnown={() => toggleKnown(v.n)}
           />
         ))}
       </div>
@@ -373,7 +383,7 @@ function SurahPage() {
 
       <button
         onClick={finish}
-        className={`mt-4 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-black ${
+        className={`mt-4 mb-24 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-black ${
           st.memorized
             ? "bg-primary-soft text-primary"
             : "grad-emerald text-primary-foreground shadow-lift"
@@ -382,106 +392,219 @@ function SurahPage() {
         <Check size={17} strokeWidth={3} />
         {st.memorized ? "Mémorisée ✓ (annuler)" : "J'ai mémorisé cette sourate"}
       </button>
+
+      {/* Player fixe, hors du flux de scroll */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+62px)] z-40 flex justify-center px-3">
+        <div className="surface pointer-events-auto w-full max-w-[494px] p-2.5 shadow-lift">
+          {pickReciter && (
+            <div className="mb-2 grid gap-1.5">
+              {AYAH_RECITERS.map((r) => (
+                <button
+                  key={r.id}
+                  onClick={() => {
+                    setReciter(r.id);
+                    setPickReciter(false);
+                  }}
+                  className={`flex items-center gap-2 rounded-xl px-3 py-2 text-left ${
+                    reciterId === r.id ? "bg-primary-soft text-primary" : "bg-secondary"
+                  }`}
+                >
+                  <span>{r.emoji}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-xs font-extrabold">{r.name}</span>
+                    <span className="text-muted-foreground block truncate text-[10px] font-semibold">
+                      {r.detail}
+                    </span>
+                  </span>
+                  {reciterId === r.id && <span className="text-xs font-black">✓</span>}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="bg-secondary mb-2 h-1 overflow-hidden rounded-full">
+            <div className="bg-accent h-full transition-[width]" style={{ width: `${pct}%` }} />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={togglePlay}
+              className="bg-primary text-primary-foreground flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+              aria-label={playing ? "Pause" : "Écouter"}
+            >
+              {busy ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : playing ? (
+                <Pause size={18} fill="currentColor" />
+              ) : (
+                <Play size={18} fill="currentColor" />
+              )}
+            </button>
+            <button onClick={() => setPickReciter((v) => !v)} className="min-w-0 flex-1 text-left">
+              <p className="flex items-center gap-1 truncate text-[11px] font-black">
+                {reciter.emoji} {reciter.name}
+                <ChevronDown size={12} className={pickReciter ? "rotate-180" : ""} />
+              </p>
+              <p className="text-muted-foreground truncate text-[10px] font-semibold">
+                {current ? `Verset ${current}` : reciter.detail}
+              </p>
+            </button>
+            <button
+              onClick={() =>
+                setRate(SPEEDS[((SPEEDS as readonly number[]).indexOf(rate) + 1) % SPEEDS.length]!)
+              }
+              className="bg-secondary shrink-0 rounded-full px-2.5 py-1.5 text-[11px] font-black"
+              aria-label="Vitesse"
+            >
+              ×{rate}
+            </button>
+            <button
+              onClick={() =>
+                setReps(REPEATS[((REPEATS as readonly number[]).indexOf(reps) + 1) % REPEATS.length]!)
+              }
+              className={`shrink-0 rounded-full px-2.5 py-1.5 text-[11px] font-black ${
+                reps > 1 ? "bg-accent-soft text-accent-foreground" : "bg-secondary"
+              }`}
+              aria-label="Répétitions"
+            >
+              ↻{reps}
+            </button>
+          </div>
+        </div>
+      </div>
     </Shell>
   );
 }
 
+type Tab = "sens" | "tafsir" | "dico";
+
 function VerseCard({
   v,
   mode,
-  simple,
   active,
-  innerRef,
-  open,
-  onToggle,
+  known,
+  onPlay,
+  onKnown,
 }: {
   v: Verse;
   mode: Mode;
-  simple: boolean;
   active: boolean;
-  innerRef: (el: HTMLElement | null) => void;
-  open: boolean;
-  onToggle: () => void;
+  known: boolean;
+  onPlay: () => void;
+  onKnown: () => void;
 }) {
   const [revealed, setRevealed] = useState(false);
-  const html = useMemo(() => (mode === "masque" ? wrapWords(v.ar) : v.ar), [v.ar, mode]);
+  const [tab, setTab] = useState<Tab | null>(null);
+  const html = useMemo(() => tajwidHtml(v.ar), [v.ar]);
+  const hidden = mode === "test" && !revealed;
+  const blurred = mode === "memo" && !revealed;
 
   return (
     <article
-      ref={innerRef}
+      id={`vc${v.n}`}
       className={`surface p-4 transition-colors ${active ? "ring-primary bg-primary-soft ring-2" : ""}`}
     >
       <div className="mb-2 flex items-center justify-between">
         <span className="bg-primary-soft text-primary flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-black">
           {v.n}
         </span>
-        {v.icon && <span className="text-lg">{v.icon}</span>}
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={onPlay}
+            className="bg-secondary rounded-full p-1.5"
+            aria-label={`Écouter le verset ${v.n}`}
+          >
+            <Play size={13} fill="currentColor" />
+          </button>
+          <button
+            onClick={onKnown}
+            className={`rounded-full p-1.5 ${known ? "bg-primary text-primary-foreground" : "bg-secondary"}`}
+            aria-label="Je connais ce verset"
+          >
+            <Heart size={13} fill={known ? "currentColor" : "none"} />
+          </button>
+        </div>
       </div>
 
       <p
         dir="rtl"
-        onClick={() => mode === "masque" && setRevealed((r) => !r)}
-        className={`arabic text-2xl ${mode === "masque" && !revealed ? "hide-words" : ""}`}
+        onClick={() => (mode !== "lecture" ? setRevealed((r) => !r) : undefined)}
+        className={`arabic text-2xl ${hidden ? "hide-words" : ""} ${blurred ? "blur-words" : ""}`}
         dangerouslySetInnerHTML={{ __html: html }}
       />
 
-      {mode === "masque" && (
+      {mode !== "lecture" && (
         <p className="text-muted-foreground mt-2 text-center text-[11px] font-bold">
           {revealed ? "Touche pour masquer" : "Touche le verset pour révéler"}
         </p>
       )}
 
-      {mode !== "masque" && (
-        <>
-          {simple && v.sens ? (
-            <>
-              <p className="mt-3 text-sm leading-relaxed font-bold">{v.sens}</p>
-              <p className="text-muted-foreground mt-1.5 text-[11px] leading-relaxed font-semibold">
-                Traduction : {v.tr}
-              </p>
-            </>
-          ) : (
-            <p className="text-muted-foreground mt-3 text-sm leading-relaxed font-semibold">
-              {v.tr}
-            </p>
-          )}
-        </>
-      )}
+      <p className="mt-3 text-sm leading-relaxed font-semibold">{v.tr}</p>
 
-      {mode === "sens" && (
-        <>
-          {v.sens && !simple && (
-            <p className="bg-secondary mt-3 rounded-xl px-3 py-2 text-xs font-bold">✨ {v.sens}</p>
-          )}
-          {(v.tafsir || v.dico?.length) && (
-            <button
-              onClick={onToggle}
-              className="text-primary mt-3 text-xs font-black"
-              type="button"
-            >
-              {open ? "− Masquer l'explication" : "+ Explication & vocabulaire"}
-            </button>
-          )}
-          {open && (
-            <div className="mt-2 space-y-2">
-              {v.tafsir && (
-                <p className="text-xs leading-relaxed font-semibold">{v.tafsir}</p>
-              )}
-              {v.dico?.map((d, i) => (
-                <div key={i} className="bg-secondary rounded-xl p-3">
-                  <p className="flex items-baseline justify-between gap-2">
-                    <span className="text-xs font-black">{d.simple}</span>
-                    <span className="arabic text-base">{d.ar}</span>
-                  </p>
-                  <p className="text-muted-foreground mt-1 text-[11px] leading-relaxed font-semibold">
-                    {d.img}
-                  </p>
-                </div>
-              ))}
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {v.sens && (
+          <TabBtn on={tab === "sens"} onClick={() => setTab(tab === "sens" ? null : "sens")}>
+            💡 Sens
+          </TabBtn>
+        )}
+        {v.tafsir && (
+          <TabBtn on={tab === "tafsir"} onClick={() => setTab(tab === "tafsir" ? null : "tafsir")}>
+            📖 Explication
+          </TabBtn>
+        )}
+        {!!v.dico?.length && (
+          <TabBtn on={tab === "dico"} onClick={() => setTab(tab === "dico" ? null : "dico")}>
+            🔤 Dictionnaire
+          </TabBtn>
+        )}
+      </div>
+
+      {tab === "sens" && v.sens && (
+        <p className="bg-secondary mt-2 rounded-xl px-3 py-2 text-xs leading-relaxed font-bold">
+          {v.sens}
+        </p>
+      )}
+      {tab === "tafsir" && v.tafsir && (
+        <p className="bg-secondary mt-2 rounded-xl px-3 py-2 text-xs leading-relaxed font-semibold">
+          {v.tafsir}
+        </p>
+      )}
+      {tab === "dico" && (
+        <div className="mt-2 space-y-2">
+          {v.dico?.map((d, i) => (
+            <div key={i} className="bg-secondary rounded-xl p-3">
+              <p className="flex items-baseline justify-between gap-2">
+                <span className="text-xs font-black">{d.simple}</span>
+                <span className="arabic text-base">{d.ar}</span>
+              </p>
+              <p className="text-muted-foreground mt-1 text-[11px] leading-relaxed font-semibold">
+                {d.img}
+              </p>
             </div>
-          )}
-        </>
+          ))}
+        </div>
       )}
     </article>
+  );
+}
+
+function TabBtn({
+  on,
+  onClick,
+  children,
+}: {
+  on: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`rounded-full px-3 py-1.5 text-[11px] font-black ${
+        on ? "bg-primary text-primary-foreground" : "bg-secondary"
+      }`}
+    >
+      {children}
+    </button>
   );
 }
