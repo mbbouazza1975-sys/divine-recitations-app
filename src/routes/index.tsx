@@ -113,6 +113,35 @@ function Home() {
           </div>
         </section>
 
+        <section className="mt-5">
+          <h3 className="text-muted-foreground mb-2 text-[11px] font-black tracking-wider uppercase">
+            Ta routine de hifz
+          </h3>
+          <div className="grid grid-cols-3 gap-2.5">
+            {(
+              [
+                ["Sabaq", "Nouveau", "🌱", next],
+                ["Sabqi", "Révision récente", "🔁", sabqi],
+                ["Manzil", "Ancien", "🏛️", manzil],
+              ] as const
+            ).map(([label, sub, emoji, s]) => (
+              <Link
+                key={label}
+                to="/sourate/$num"
+                params={{ num: String((s ?? next).num) }}
+                className="surface enter flex flex-col gap-1 p-3"
+              >
+                <span className="text-xl">{emoji}</span>
+                <span className="text-xs font-black">{label}</span>
+                <span className="text-muted-foreground text-[10px] font-semibold">{sub}</span>
+                <span className="text-primary truncate text-[11px] font-extrabold">
+                  {(s ?? next).fr}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+
         <div className="mt-4 grid grid-cols-2 gap-3">
           <Link to="/quiz" className="surface enter flex flex-col gap-2 p-4">
             <span className="bg-accent-soft flex h-10 w-10 items-center justify-center rounded-xl">
@@ -133,6 +162,7 @@ function Home() {
             </span>
           </Link>
         </div>
+
 
         {recent.length > 0 && (
           <section className="mt-6">
