@@ -31,7 +31,11 @@ function Home() {
   const goalPct = Math.min(100, Math.round((todayXp / (state.dailyGoal * 10)) * 100));
 
   const next = SURAHS.find((s) => !stat(s.num).memorized) ?? SURAHS[0]!;
+  const memorized = SURAHS.filter((s) => stat(s.num).memorized);
+  const sabqi = memorized[memorized.length - 1];
+  const manzil = memorized[0];
   const recent = SURAHS.filter((s) => stat(s.num).listens > 0).slice(0, 4);
+
 
   const [greet, setGreet] = useState("As-salâmu ʿalaykum");
   useEffect(() => {
