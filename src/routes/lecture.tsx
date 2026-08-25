@@ -73,45 +73,61 @@ function Lecture() {
         ))}
       </div>
 
-      <div className="mt-4 space-y-2">
-        {list.map((s) => {
-          const st = stat(s.num);
-          return (
-            <Link
-              key={s.num}
-              to="/sourate/$num"
-              params={{ num: String(s.num) }}
-              className="surface flex items-center gap-3 p-3"
-            >
-              <span className="bg-secondary text-muted-foreground flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xs font-black">
-                {s.num}
+      {GROUPS.map((g) => {
+        const items = list.filter((s) => s.num >= g.from && s.num <= g.to);
+        if (!items.length) return null;
+        return (
+          <section key={g.label} className="mt-5">
+            <div className="mb-2 flex items-baseline justify-between">
+              <h2 className="text-[11px] font-black tracking-wider uppercase">
+                {g.emoji} {g.label}
+              </h2>
+              <span className="text-muted-foreground text-[10px] font-bold">
+                {items.length} sourates
               </span>
-              <span className="min-w-0 flex-1">
-                <span className="flex items-center gap-1.5">
-                  <span className="truncate text-sm font-extrabold">{s.fr}</span>
-                  {st.memorized && (
-                    <Check size={13} className="text-primary shrink-0" strokeWidth={3.5} />
-                  )}
-                </span>
-                <span className="text-muted-foreground block truncate text-[11px] font-semibold">
-                  {s.fr2} · {s.versets} versets
-                </span>
-              </span>
-              <span className="shrink-0 text-right">
-                <span className="arabic block text-base leading-none">{s.ar}</span>
-                <span className="mt-1 block text-[10px]">
-                  {"⭐".repeat(st.stars)}
-                </span>
-              </span>
-            </Link>
-          );
-        })}
-        {list.length === 0 && (
-          <p className="text-muted-foreground py-10 text-center text-sm font-semibold">
-            Aucune sourate ne correspond.
-          </p>
-        )}
-      </div>
+            </div>
+            <p className="text-muted-foreground mb-2 text-[11px] font-semibold">{g.hint}</p>
+            <div className="space-y-2">
+              {items.map((s) => {
+                const st = stat(s.num);
+                return (
+                  <Link
+                    key={s.num}
+                    to="/sourate/$num"
+                    params={{ num: String(s.num) }}
+                    className="surface flex items-center gap-3 p-3"
+                  >
+                    <span className="bg-secondary text-muted-foreground flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xs font-black">
+                      {s.num}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-1.5">
+                        <span className="truncate text-sm font-extrabold">{s.fr}</span>
+                        {st.memorized && (
+                          <Check size={13} className="text-primary shrink-0" strokeWidth={3.5} />
+                        )}
+                      </span>
+                      <span className="text-muted-foreground block truncate text-[11px] font-semibold">
+                        {s.fr2} · {s.versets} versets
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-right">
+                      <span className="arabic block text-base leading-none">{s.ar}</span>
+                      <span className="mt-1 block text-[10px]">{"⭐".repeat(st.stars)}</span>
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })}
+      {list.length === 0 && (
+        <p className="text-muted-foreground py-10 text-center text-sm font-semibold">
+          Aucune sourate ne correspond.
+        </p>
+      )}
+
     </Shell>
   );
 }
