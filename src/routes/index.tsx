@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Flame, Play, Sparkles, Brain, Headphones, ChevronRight } from "lucide-react";
 import { BottomNav } from "@/components/BottomNav";
-import { SURAHS, totalVerses } from "@/data/quran";
+import { RECITERS, SURAHS, totalVerses } from "@/data/quran";
 import { levelOf, levelProgress, useProgress } from "@/lib/progress";
 
 export const Route = createFileRoute("/")({
@@ -31,7 +31,11 @@ function Home() {
   const goalPct = Math.min(100, Math.round((todayXp / (state.dailyGoal * 10)) * 100));
 
   const next = SURAHS.find((s) => !stat(s.num).memorized) ?? SURAHS[0]!;
+  const memorized = SURAHS.filter((s) => stat(s.num).memorized);
+  const sabqi = memorized[memorized.length - 1];
+  const manzil = memorized[0];
   const recent = SURAHS.filter((s) => stat(s.num).listens > 0).slice(0, 4);
+
 
   const [greet, setGreet] = useState("As-salâmu ʿalaykum");
   useEffect(() => {
@@ -113,6 +117,35 @@ function Home() {
           </div>
         </section>
 
+        <section className="mt-5">
+          <h3 className="text-muted-foreground mb-2 text-[11px] font-black tracking-wider uppercase">
+            Ta routine de hifz
+          </h3>
+          <div className="grid grid-cols-3 gap-2.5">
+            {(
+              [
+                ["Sabaq", "Nouveau", "🌱", next],
+                ["Sabqi", "Révision récente", "🔁", sabqi],
+                ["Manzil", "Ancien", "🏛️", manzil],
+              ] as const
+            ).map(([label, sub, emoji, s]) => (
+              <Link
+                key={label}
+                to="/sourate/$num"
+                params={{ num: String((s ?? next).num) }}
+                className="surface enter flex flex-col gap-1 p-3"
+              >
+                <span className="text-xl">{emoji}</span>
+                <span className="text-xs font-black">{label}</span>
+                <span className="text-muted-foreground text-[10px] font-semibold">{sub}</span>
+                <span className="text-primary truncate text-[11px] font-extrabold">
+                  {(s ?? next).fr}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+
         <div className="mt-4 grid grid-cols-2 gap-3">
           <Link to="/quiz" className="surface enter flex flex-col gap-2 p-4">
             <span className="bg-accent-soft flex h-10 w-10 items-center justify-center rounded-xl">
@@ -133,6 +166,7 @@ function Home() {
             </span>
           </Link>
         </div>
+
 
         {recent.length > 0 && (
           <section className="mt-6">
@@ -162,7 +196,7 @@ function Home() {
         )}
 
         <p className="text-muted-foreground mt-8 flex items-center justify-center gap-1.5 text-center text-[11px] font-semibold">
-          <Sparkles size={13} /> Récitation Warsh &apos;an Nâfi&apos; · 4 récitateurs
+          <Sparkles size={13} /> Récitation Warsh &apos;an Nâfi&apos; · {RECITERS.length} récitateurs
         </p>
       </main>
       <BottomNav />
