@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Flame, Play, Sparkles, Brain, Headphones, ChevronRight } from "lucide-react";
 import { BottomNav } from "@/components/BottomNav";
-import { SURAHS, totalVerses } from "@/data/quran";
+import { RECITERS, SURAHS, totalVerses } from "@/data/quran";
 import { levelOf, levelProgress, useProgress } from "@/lib/progress";
 
 export const Route = createFileRoute("/")({
@@ -196,7 +196,7 @@ function Home() {
         )}
 
         <p className="text-muted-foreground mt-8 flex items-center justify-center gap-1.5 text-center text-[11px] font-semibold">
-          <Sparkles size={13} /> Récitation Warsh &apos;an Nâfi&apos; · 4 récitateurs
+          <Sparkles size={13} /> Récitation Warsh &apos;an Nâfi&apos; · {RECITERS.length} récitateurs
         </p>
       </main>
       <BottomNav />
