@@ -26,6 +26,38 @@ export const Route = createFileRoute("/lecture")({
 
 const FILTERS = ["Toutes", "En cours", "Mémorisées", "À découvrir"] as const;
 
+const GROUPS = [
+  {
+    label: "Les indispensables",
+    emoji: "🕌",
+    hint: "Les plus courtes, celles qu'on récite chaque jour dans la prière.",
+    from: 103,
+    to: 114,
+  },
+  {
+    label: "Le cœur du Juz",
+    emoji: "💚",
+    hint: "Douceur et réconfort : la lumière du matin, l'ouverture du cœur.",
+    from: 93,
+    to: 102,
+  },
+  {
+    label: "Récits & rappels",
+    emoji: "📜",
+    hint: "Des histoires fortes et des images puissantes pour méditer.",
+    from: 85,
+    to: 92,
+  },
+  {
+    label: "Les grandes sourates",
+    emoji: "🌌",
+    hint: "Le Jour du Jugement décrit en détail — le grand final du Juz.",
+    from: 78,
+    to: 84,
+  },
+] as const;
+
+
 function Lecture() {
   const { stat } = useProgress();
   const [q, setQ] = useState("");
