@@ -145,20 +145,21 @@ export const AYAH_RECITERS: AyahReciter[] = [
     emoji: "📖",
   },
   {
-    id: "husary",
-    name: "Mahmûd Al-Husarî",
-    detail: "Tajwîd très lent, école du hifz",
-    base: "https://everyayah.com/data/Husary_128kbps/",
-    emoji: "🏆",
-  },
-  {
-    id: "belalia",
-    name: "Rachîd Belâlya",
-    detail: "Voix chaleureuse, rythme régulier",
-    base: "https://everyayah.com/data/Husary_128kbps/",
-    emoji: "🎧",
+    id: "basit",
+    name: "'Abdul Bâsit 'Abdus-Samad",
+    detail: "Warsh · récitation légendaire",
+    base: "https://everyayah.com/data/warsh/warsh_Abdul_Basit_128kbps/",
+    emoji: "⭐",
   },
 ];
+// NB : everyayah.com — la source utilisée pour le découpage verset-par-verset — ne propose
+// QUE ces 3 récitations en Warsh. Il y avait ici auparavant une entrée « Mahmûd Al-Husarî »
+// pointant vers everyayah.com/data/Husary_128kbps/, qui est la lecture Hafs standard de
+// Husary (pas Warsh — everyayah ne l'a pas en Warsh), et une entrée « Rachîd Belâlya »
+// qui pointait vers cette même URL Husary/Hafs par erreur (copier-coller). Les deux ont
+// été retirées : dans une app dont la promesse est « tout en Warsh », jouer du Hafs sous
+// une autre étiquette est trompeur. Rachîd Belâlya reste disponible en Warsh au niveau
+// sourate (RECITERS ci-dessus, via mp3quran.net) — juste pas en version verset-par-verset.
 
 export const getAyahReciter = (id: string) =>
   AYAH_RECITERS.find((r) => r.id === id) ?? AYAH_RECITERS[0]!;
